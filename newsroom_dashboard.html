@@ -23,8 +23,10 @@ body {
   border-bottom:2px solid #222;
 }
 
-.logo img {
-  height:50px;
+.logo {
+  font-size:28px;
+  font-weight:bold;
+  color:#f5c542;
 }
 
 .title {
@@ -65,14 +67,13 @@ marquee {
 <body>
 
 <div class="header">
-  <div class="logo">
-    <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
-  </div>
+  <div class="logo">בקהילה</div>
   <div class="title">סטטוס מערכת העיתון</div>
   <div class="clock" id="clock"></div>
 </div>
 
 <div class="sheet">
+  <!-- ⚠️ זה הקישור הנכון -->
   <iframe src="https://docs.google.com/spreadsheets/d/1d9mdpQHSgaQlEAkqgXkAh9SzNVVQmhYDqDcAJfeGSlg/pubhtml?widget=true&headers=false"></iframe>
 </div>
 
@@ -103,8 +104,10 @@ async function load(){
     let arr = [];
 
     data.items.slice(0,8).forEach(item=>{
-      let time = item.pubDate.match(/\d{2}:\d{2}/)[0];
+      let timeMatch = item.pubDate.match(/\d{2}:\d{2}/);
+      let time = timeMatch ? timeMatch[0] : "";
       let cleanTitle = new DOMParser().parseFromString(item.title, "text/html").body.textContent;
+
       arr.push("🕒 " + time + " • " + cleanTitle);
     });
 
