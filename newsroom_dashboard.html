@@ -12,7 +12,6 @@ body {
   color: white;
 }
 
-/* HEADER */
 .header {
   height: 80px;
   background: black;
@@ -35,7 +34,6 @@ body {
   font-size: 22px;
 }
 
-/* SHEET */
 .sheet {
   height: calc(100vh - 140px);
 }
@@ -46,7 +44,6 @@ iframe {
   border: none;
 }
 
-/* TICKER */
 .ticker {
   height: 60px;
   background: black;
@@ -65,14 +62,14 @@ marquee {
 
 <div class="header">
   <div class="logo">
-    <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
+    <img src="לוגו בקהילה הכי טובים_Page_1.png">
   </div>
   <div class="title">סטטוס מערכת העיתון</div>
   <div class="clock" id="clock"></div>
 </div>
 
 <div class="sheet">
-  <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false"></iframe>
+  <iframe id="sheetFrame"></iframe>
 </div>
 
 <div class="ticker">
@@ -80,6 +77,9 @@ marquee {
 </div>
 
 <script>
+
+// 🔥 קישור לשיטס
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false";
 
 // CLOCK
 function updateClock() {
@@ -91,6 +91,12 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// 🔥 רענון שיטס בלי קאש
+function refreshSheet() {
+  document.getElementById("sheetFrame").src =
+    SHEET_URL + "&t=" + new Date().getTime();
+}
+
 // ניקוי טקסט
 function decodeHtmlEntities(str) {
   const txt = document.createElement("textarea");
@@ -101,57 +107,4 @@ function decodeHtmlEntities(str) {
   txt2.innerHTML = decoded;
   decoded = txt2.value;
 
-  return decoded
-    .replace(/&#?\w+;/g, "")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim();
-}
-
-// תיקון זמן
-function formatIsraelTime(dateStr) {
-  const d = new Date(dateStr);
-  d.setHours(d.getHours() + 3);
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return h + ":" + m;
-}
-
-// NEWS
-async function load() {
-  try {
-    const url = "https://api.rss2json.com/v1/api.json?rss_url=" +
-      encodeURIComponent("https://rotter.net/rss/rotternews.xml") +
-      "&x=" + Date.now();
-
-    const res = await fetch(url, { cache: "no-store" });
-    const data = await res.json();
-
-    let arr = [];
-
-    data.items.slice(0, 8).forEach(item => {
-      let time = formatIsraelTime(item.pubDate);
-      let cleanTitle = decodeHtmlEntities(item.title);
-
-      arr.push("🕒 " + time + " • " + cleanTitle);
-    });
-
-    document.getElementById("ticker").innerText = arr.join("   ✦   ");
-
-  } catch {
-    document.getElementById("ticker").innerText = "שגיאה בטעינת חדשות";
-  }
-}
-
-load();
-setInterval(load, 30000);
-
-// 🔥 רענון כל הדף כל דקה
-setInterval(() => location.reload(), 60000);
-
-</script>
-
-</body>
-</html>
+  return decoded.replace(/&#?\w+;/g, "").trim
