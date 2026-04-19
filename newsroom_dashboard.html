@@ -79,6 +79,71 @@ marquee {
 
 <script>
 function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2, '0');
+  var m = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('clock').innerText = h + ':' + m;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function decodeText(str) {
+  var txt = document.createElement('textarea');
+  txt.innerHTML = str;
+  var decoded = txt.value;
+
+  var txt2 = document.createElement('textarea');
+  txt2.innerHTML = decoded;
+  decoded = txt2.value;
+
+  return decoded
+    .replace(/&#?\w+;/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
+
+function formatIsraelTime(dateStr) {
+  var d = new Date(dateStr);
+  d.setHours(d.getHours() + 3);
+  var h = String(d.getHours()).padStart(2, '0');
+  var m = String(d.getMinutes()).padStart(2, '0');
+  return h + ':' + m;
+}
+
+function loadNews() {
+  var url = 'https://api.rss2json.com/v1/api.json?rss_url=' +
+    encodeURIComponent('https://rotter.net/rss/rotternews.xml') +
+    '&x=' + Date.now();
+
+  fetch(url, { cache: 'no-store' })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data.items || !data.items.length) {
+        document.getElementById('ticker').innerText = 'אין חדשות להצגה כרגע';
+        return;
+      }
+
+      var arr = [];
+
+      data.items.slice(0, 8).forEach(function(item) {
+        var time = formatIsraelTime(item.pubDate);
+        var cleanTitle = decodeText(item.title);
+        arr.push('🕒 ' + time + ' • ' + cleanTitle);
+      });
+
+      document.getElementById('ticker').innerText = arr.join('   ✦   ');
+    })
+    .catch(function() {
+      document.getElementById('ticker').innerText = 'שגיאה בטעינת חדשות';
+    });
+}
+
+loadNews();
+setInterval(loadNews, 30000);
+</script>
+
+</body>
+</html>
