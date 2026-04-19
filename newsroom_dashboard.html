@@ -7,7 +7,7 @@
 <style>
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: #111;
   color: white;
 }
@@ -19,7 +19,6 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  border-bottom: 2px solid #222;
 }
 
 .logo img {
@@ -50,7 +49,7 @@ iframe {
   background: black;
   display: flex;
   align-items: center;
-  font-size: 28px;
+  font-size: 26px;
 }
 
 marquee {
@@ -63,7 +62,7 @@ marquee {
 
 <div class="header">
   <div class="logo">
-    <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
+    <img src="לוגו בקהילה הכי טובים_Page_1.png">
   </div>
   <div class="title">סטטוס מערכת העיתון</div>
   <div class="clock" id="clock"></div>
@@ -74,82 +73,62 @@ marquee {
 </div>
 
 <div class="ticker">
-  <marquee id="ticker" scrollamount="6">טוען חדשות...</marquee>
+  <marquee id="ticker">טוען חדשות...</marquee>
 </div>
 
 <script>
+
+// שעון
 function updateClock() {
-  var now = new Date();
-  var h = String(now.getHours()).padStart(2, '0');
-  var m = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('clock').innerText = h + ':' + m;
+  const now = new Date();
+  document.getElementById("clock").innerText =
+    now.getHours().toString().padStart(2,'0') + ":" +
+    now.getMinutes().toString().padStart(2,'0');
 }
-setInterval(updateClock, 1000);
+setInterval(updateClock,1000);
 updateClock();
 
-function decodeText(str) {
-  var txt = document.createElement('textarea');
-  txt.innerHTML = str;
-  var decoded = txt.value;
-
-  var txt2 = document.createElement('textarea');
-  txt2.innerHTML = decoded;
-  decoded = txt2.value;
-
-  return decoded
-    .replace(/&#?\w+;/g, '')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim();
-}
-
-function formatIsraelTime(dateStr) {
-  var d = new Date(dateStr);
-  d.setHours(d.getHours() + 3);
-  var h = String(d.getHours()).padStart(2, '0');
-  var m = String(d.getMinutes()).padStart(2, '0');
-  return h + ':' + m;
-}
-
-const URL = "https://script.google.com/macros/s/AKfycbwARDOLjY2qiE5p_Na6M9qmovRbSklhzBxOgdt20jVbcC2nUHuO_FYfM2s5JLh35SeIUw/exec";
-
-function renderNews(data) {
-  if (!data.items || !data.items.length) {
-    document.getElementById('ticker').innerText = 'אין חדשות להצגה כרגע';
-    return;
-  }
-
-  var arr = [];
-
-  data.items.slice(0, 8).forEach(function(item) {
-    var time = formatIsraelTime(item.pubDate);
-    var cleanTitle = decodeText(item.title);
-    arr.push('🕒 ' + time + ' • ' + cleanTitle);
-  });
-
-  document.getElementById('ticker').innerText = arr.join('   ✦   ');
-}
+// חדשות (פתרון פשוט)
+const URL = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml");
 
 function loadNews() {
-  document.getElementById('ticker').innerText = 'טוען חדשות...';
+  fetch(URL + "&t=" + Date.now())
+    .then(res => res.json())
+    .then(data => {
 
-  var oldScript = document.getElementById('newsScript');
-  if (oldScript) oldScript.remove();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(data.contents, "text/xml");
+      const items = xml.querySelectorAll("item");
 
-  var script = document.createElement('script');
-  script.id = 'newsScript';
-  script.src = URL + '?callback=renderNews&t=' + Date.now();
-  script.onerror = function() {
-    document.getElementById('ticker').innerText = 'שגיאה בטעינת חדשות';
-  };
+      let arr = [];
 
-  document.body.appendChild(script);
+      items.forEach((item,i)=>{
+        if(i<8){
+          let title = item.querySelector("title").textContent;
+          let date = item.querySelector("pubDate").textContent;
+
+          let d = new Date(date);
+          d.setHours(d.getHours()+3);
+
+          let time =
+            d.getHours().toString().padStart(2,'0') + ":" +
+            d.getMinutes().toString().padStart(2,'0');
+
+          arr.push("🕒 " + time + " • " + title);
+        }
+      });
+
+      document.getElementById("ticker").innerText = arr.join("   ✦   ");
+
+    })
+    .catch(()=>{
+      document.getElementById("ticker").innerText = "שגיאה בטעינה";
+    });
 }
 
 loadNews();
-setInterval(loadNews, 30000);
+setInterval(loadNews,30000);
+
 </script>
 
 </body>
