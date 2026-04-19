@@ -42,6 +42,7 @@ iframe {
   width: 100%;
   height: 100%;
   border: none;
+  background: white;
 }
 
 .ticker {
@@ -62,14 +63,14 @@ marquee {
 
 <div class="header">
   <div class="logo">
-    <img src="לוגו בקהילה הכי טובים_Page_1.png">
+    <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
   </div>
   <div class="title">סטטוס מערכת העיתון</div>
   <div class="clock" id="clock"></div>
 </div>
 
 <div class="sheet">
-  <iframe id="sheetFrame"></iframe>
+  <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false"></iframe>
 </div>
 
 <div class="ticker">
@@ -77,34 +78,7 @@ marquee {
 </div>
 
 <script>
-
-// 🔥 קישור לשיטס
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false";
-
-// CLOCK
 function updateClock() {
   const now = new Date();
   const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById("clock").innerText = h + ":" + m;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// 🔥 רענון שיטס בלי קאש
-function refreshSheet() {
-  document.getElementById("sheetFrame").src =
-    SHEET_URL + "&t=" + new Date().getTime();
-}
-
-// ניקוי טקסט
-function decodeHtmlEntities(str) {
-  const txt = document.createElement("textarea");
-  txt.innerHTML = str;
-  let decoded = txt.value;
-
-  const txt2 = document.createElement("textarea");
-  txt2.innerHTML = decoded;
-  decoded = txt2.value;
-
-  return decoded.replace(/&#?\w+;/g, "").trim
+  const m = String(now.getMinutes
