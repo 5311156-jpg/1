@@ -115,26 +115,42 @@ function formatIsraelTime(dateStr) {
 
 const URL = "https://script.google.com/macros/s/AKfycbwARDOLjY2qiE5p_Na6M9qmovRbSklhzBxOgdt20jVbcC2nUHuO_FYfM2s5JLh35SeIUw/exec";
 
-function loadNews() {
-  fetch(URL + "?t=" + Date.now(), { cache: 'no-store' })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (!data.items || !data.items.length) {
-        document.getElementById('ticker').innerText = 'אין חדשות להצגה כרגע';
-        return;
-      }
+function renderNews(data) {
+  if (!data.items || !data.items.length) {
+    document.getElementById('ticker').innerText = 'אין חדשות להצגה כרגע';
+    return;
+  }
 
-      var arr = [];
+  var arr = [];
 
-      data.items.slice(0, 8).forEach(function(item) {
-        var time = formatIsraelTime(item.pubDate);
-        var cleanTitle = decodeText(item.title);
-        arr.push('🕒 ' + time + ' • ' + cleanTitle);
-      });
+  data.items.slice(0, 8).forEach(function(item) {
+    var time = formatIsraelTime(item.pubDate);
+    var cleanTitle = decodeText(item.title);
+    arr.push('🕒 ' + time + ' • ' + cleanTitle);
+  });
 
-      document.getElementById('ticker').innerText = arr.join('   ✦   ');
-    })
-    .catch(function() {
-      document.getElementById('ticker').innerText = 'שגיאה בטעינת חדשות';
-    });
+  document.getElementById('ticker').innerText = arr.join('   ✦   ');
 }
+
+function loadNews() {
+  document.getElementById('ticker').innerText = 'טוען חדשות...';
+
+  var oldScript = document.getElementById('newsScript');
+  if (oldScript) oldScript.remove();
+
+  var script = document.createElement('script');
+  script.id = 'newsScript';
+  script.src = URL + '?callback=renderNews&t=' + Date.now();
+  script.onerror = function() {
+    document.getElementById('ticker').innerText = 'שגיאה בטעינת חדשות';
+  };
+
+  document.body.appendChild(script);
+}
+
+loadNews();
+setInterval(loadNews, 30000);
+</script>
+
+</body>
+</html>
