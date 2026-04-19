@@ -56,6 +56,7 @@ marquee {
   width: 100%;
 }
 </style>
+
 </head>
 
 <body>
@@ -88,45 +89,25 @@ function updateClock() {
 setInterval(updateClock,1000);
 updateClock();
 
-// 🔥 פונקציה שמתקנת עברית מקולקלת
-function fixHebrew(str) {
-  try {
-    return decodeURIComponent(escape(str));
-  } catch {
-    return str;
-  }
-}
-
-// חדשות
-const URL = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml");
+// חדשות דרך Ynet (עובד יציב)
+const URL = "https://api.rss2json.com/v1/api.json?rss_url=" +
+  encodeURIComponent("https://www.ynet.co.il/Integration/StoryRss2.xml");
 
 function loadNews() {
   fetch(URL + "&t=" + Date.now())
     .then(res => res.json())
     .then(data => {
 
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(data.contents, "text/xml");
-      const items = xml.querySelectorAll("item");
-
       let arr = [];
 
-      items.forEach((item,i)=>{
-        if(i<8){
-          let title = item.querySelector("title").textContent;
-          title = fixHebrew(title); // 🔥 תיקון עברית
+      data.items.slice(0,8).forEach(item=>{
+        let d = new Date(item.pubDate);
 
-          let date = item.querySelector("pubDate").textContent;
+        let time =
+          d.getHours().toString().padStart(2,'0') + ":" +
+          d.getMinutes().toString().padStart(2,'0');
 
-          let d = new Date(date);
-          d.setHours(d.getHours()+3);
-
-          let time =
-            d.getHours().toString().padStart(2,'0') + ":" +
-            d.getMinutes().toString().padStart(2,'0');
-
-          arr.push("🕒 " + time + " • " + title);
-        }
+        arr.push("🕒 " + time + " • " + item.title);
       });
 
       document.getElementById("ticker").innerText = arr.join("   ✦   ");
