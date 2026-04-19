@@ -99,21 +99,29 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// פונקציית טעינת חדשות עם תיקון קידוד (Encoding)
+// פונקציית טעינה עם פענוח קידוד ידני
 async function loadNews() {
   const RSS_URL = "https://rotter.net/rss/rotternews.xml";
-  // שימוש ב-AllOrigins כדי למשוך את המידע הגולמי (Raw)
-  const PROXY_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_URL)}&t=${Date.now()}`;
+  // שרת פרוקסי שמעביר נתונים גולמיים
+  const PROXY_URL = "https://corsproxy.io/?" + encodeURIComponent(RSS_URL + "?t=" + Date.now());
 
   try {
     const response = await fetch(PROXY_URL);
-    const data = await response.json();
+    if (!response.ok) throw new Error('Network response was not ok');
     
-    // כאן קורה הקסם: אנחנו לוקחים את הטקסט הגולמי ומפענחים אותו כ-Windows-1255
-    // AllOrigins מחזיר את התוכן ב-data.contents
+    // מושכים את המידע כ-ArrayBuffer (נתונים גולמיים)
+    const buffer = await response.arrayBuffer();
+    
+    // מפענחים את הנתונים לפי הקידוד המיוחד של רוטר (Windows-1255)
+    const decoder = new TextDecoder('windows-1255');
+    const text = decoder.decode(buffer);
+    
+    // הופכים את הטקסט ל-XML
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+    const xmlDoc = parser.parseFromString(text, "text/xml");
     const items = xmlDoc.querySelectorAll("item");
+
+    if (items.length === 0) throw new Error('No items found');
 
     let newsHtml = "";
     items.forEach((item, index) => {
@@ -123,18 +131,22 @@ async function loadNews() {
         
         // חילוץ שעה
         const dateObj = new Date(pubDate);
-        const timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+        let timeStr = "00:00";
+        if(!isNaN(dateObj)) {
+            timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
         
         newsHtml += `<span class="news-item"><span class="news-time">${timeStr}</span> ${title}</span>`;
         if (index < 11) newsHtml += ' <span style="color:#444"> | </span> ';
       }
     });
 
-    if (newsHtml) {
-      document.getElementById("ticker").innerHTML = newsHtml;
-    }
+    document.getElementById("ticker").innerHTML = newsHtml;
   } catch (error) {
     console.error("News error:", error);
+    document.getElementById("ticker").innerText = "מנסה להתחבר מחדש למבזקים...";
+    // ניסיון חוזר בעוד 5 שניות במקרה של תקלה
+    setTimeout(loadNews, 5000);
   }
 }
 
