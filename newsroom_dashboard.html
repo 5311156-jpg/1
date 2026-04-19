@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>בקהילה - דשבורד</title>
+
+<style>
+body {
+  margin:0;
+  font-family:Arial;
+  background:#111;
+  color:white;
+}
+
+/* HEADER */
+.header {
+  height:80px;
+  background:black;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  border-bottom:2px solid #222;
+}
+
+.logo {
+  font-size:28px;
+  font-weight:bold;
+  color:#f5c542;
+}
+
+.title {
+  font-size:24px;
+}
+
+.clock {
+  font-size:22px;
+}
+
+/* SHEET */
+.sheet {
+  height:calc(100vh - 140px);
+}
+
+iframe {
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* TICKER */
+.ticker {
+  height:60px;
+  background:black;
+  display:flex;
+  align-items:center;
+  font-size:28px;
+}
+
+marquee {
+  width:100%;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+  <div class="logo">בקהילה</div>
+  <div class="title">סטטוס מערכת העיתון</div>
+  <div class="clock" id="clock"></div>
+</div>
+
+<div class="sheet">
+  <iframe src="https://docs.google.com/spreadsheets/d/1d9mdpQHSgaQlEAkqgXkAh9SzNVVQmhYDqDcAJfeGSlg/pubhtml?widget=true&headers=false"></iframe>
+</div>
+
+<div class="ticker">
+  <marquee id="ticker" scrollamount="6">טוען חדשות...</marquee>
+</div>
+
+<script>
+
+// CLOCK
+function updateClock(){
+  const now = new Date();
+  let h = now.getHours().toString().padStart(2,'0');
+  let m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById("clock").innerText = h + ":" + m;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// NEWS
+const URL = "https://api.rss2json.com/v1/api.json?rss_url=https://rotter.net/rss/rotternews.xml";
+
+async function load(){
+  try{
+    const res = await fetch(URL);
+    const data = await res.json();
+
+    let arr = [];
+
+    data.items.slice(0,8).forEach(item=>{
+      let time = item.pubDate.match(/\d{2}:\d{2}/)[0];
+      arr.push("🕒 " + time + " • " + item.title);
+    });
+
+    document.getElementById("ticker").innerText = arr.join("   ✦   ");
+
+  }catch{
+    document.getElementById("ticker").innerText = "שגיאה בטעינת חדשות";
+  }
+}
+
+load();
+setInterval(load,60000);
+
+</script>
+
+</body>
+</html>
