@@ -2,128 +2,165 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>בקהילה - דשבורד</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בקהילה - דשבורד מערכת</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #111;
-  color: white;
-}
+  :root {
+    --bg-color: #111;
+    --header-bg: #000;
+    --accent-color: #ffcc00; /* צבע זהב/צהוב לזמנים */
+  }
 
-.header {
-  height: 80px;
-  background: black;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-}
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: var(--bg-color);
+    color: white;
+    overflow: hidden; /* מונע גלילה מיותרת של הדף */
+  }
 
-.logo img {
-  height: 50px;
-}
+  .header {
+    height: 80px;
+    background: var(--header-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+    border-bottom: 2px solid #333;
+  }
 
-.title {
-  font-size: 24px;
-}
+  .logo img {
+    height: 55px;
+    object-fit: contain;
+  }
 
-.clock {
-  font-size: 22px;
-}
+  .title {
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
 
-.sheet {
-  height: calc(100vh - 140px);
-}
+  .clock {
+    font-size: 32px;
+    font-family: monospace;
+    font-weight: bold;
+    color: var(--accent-color);
+  }
 
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: white;
-}
+  .sheet-container {
+    height: calc(100vh - 150px); /* התאמה לגובה המסך פחות הידר וטיקר */
+    background: #fff;
+  }
 
-.ticker {
-  height: 60px;
-  background: black;
-  display: flex;
-  align-items: center;
-  font-size: 26px;
-}
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
 
-marquee {
-  width: 100%;
-}
+  .ticker-container {
+    height: 70px;
+    background: var(--header-bg);
+    display: flex;
+    align-items: center;
+    border-top: 2px solid #333;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+  }
+
+  .ticker-label {
+    background: #ce0000;
+    color: white;
+    padding: 0 20px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    z-index: 10;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+  }
+
+  marquee {
+    font-size: 28px;
+    font-weight: 500;
+  }
+
+  .news-item {
+    display: inline-block;
+    padding: 0 15px;
+  }
+
+  .news-time {
+    color: var(--accent-color);
+    font-weight: bold;
+    margin-left: 8px;
+  }
 </style>
-
 </head>
 
 <body>
 
 <div class="header">
   <div class="logo">
-    <img src="לוגו בקהילה הכי טובים_Page_1.png">
+    <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
   </div>
   <div class="title">סטטוס מערכת העיתון</div>
-  <div class="clock" id="clock"></div>
+  <div id="clock" class="clock">00:00:00</div>
 </div>
 
-<div class="sheet">
+<div class="sheet-container">
   <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false"></iframe>
 </div>
 
-<div class="ticker">
-  <marquee id="ticker">טוען חדשות...</marquee>
+<div class="ticker-container">
+  <div class="ticker-label">מבזקי רוטר</div>
+  <marquee id="ticker" scrollamount="6">טוען מבזקים אחרונים...</marquee>
 </div>
 
 <script>
-
-// שעון
+// עדכון שעון מדויק
 function updateClock() {
   const now = new Date();
-  document.getElementById("clock").innerText =
-    now.getHours().toString().padStart(2,'0') + ":" +
-    now.getMinutes().toString().padStart(2,'0');
+  const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', options);
 }
-setInterval(updateClock,1000);
+setInterval(updateClock, 1000);
 updateClock();
 
-// תיקון שעה לישראל
-function formatIsraelTime(dateStr) {
-  let d = new Date(dateStr);
-  d.setHours(d.getHours() + 3);
+// הגדרות חדשות רוטר
+// שימוש ב-rss2json כדי לעקוף בעיות CORS
+const RSS_URL = "https://rotter.net/rss/rotternews.xml";
+const API_KEY = ""; // ניתן להוסיף מפתח אם יש, כרגע עובד בלי
+const PROXY_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
 
-  return d.getHours().toString().padStart(2,'0') + ":" +
-         d.getMinutes().toString().padStart(2,'0');
+async function loadNews() {
+  try {
+    const response = await fetch(PROXY_URL + "&t=" + Date.now());
+    const data = await response.json();
+
+    if (data.status === 'ok') {
+      const items = data.items.slice(0, 10); // לוקחים את 10 המבזקים האחרונים
+      const newsHtml = items.map(item => {
+        // חילוץ שעה מתוך תאריך הפרסום
+        const pubDate = new Date(item.pubDate);
+        const timeStr = pubDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+        
+        return `<span class="news-item"><span class="news-time">${timeStr}</span> ${item.title}</span>`;
+      }).join(' <span style="color:#555">|</span> ');
+
+      document.getElementById("ticker").innerHTML = newsHtml;
+    }
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    document.getElementById("ticker").innerText = "שגיאה בטעינת מבזקים";
+  }
 }
 
-// חדשות דרך Ynet
-const URL = "https://api.rss2json.com/v1/api.json?rss_url=" +
-  encodeURIComponent("https://www.ynet.co.il/Integration/StoryRss2.xml");
-
-function loadNews() {
-  fetch(URL + "&t=" + Date.now())
-    .then(res => res.json())
-    .then(data => {
-
-      let arr = [];
-
-      data.items.slice(0,8).forEach(item=>{
-        let time = formatIsraelTime(item.pubDate);
-        arr.push("🕒 " + time + " • " + item.title);
-      });
-
-      document.getElementById("ticker").innerText = arr.join("   ✦   ");
-
-    })
-    .catch(()=>{
-      document.getElementById("ticker").innerText = "שגיאה בטעינה";
-    });
-}
-
+// טעינה ראשונית ועדכון כל דקה
 loadNews();
-setInterval(loadNews,30000);
+setInterval(loadNews, 60000); 
 
 </script>
 
