@@ -89,7 +89,16 @@ function updateClock() {
 setInterval(updateClock,1000);
 updateClock();
 
-// חדשות דרך Ynet (עובד יציב)
+// תיקון שעה לישראל
+function formatIsraelTime(dateStr) {
+  let d = new Date(dateStr);
+  d.setHours(d.getHours() + 3);
+
+  return d.getHours().toString().padStart(2,'0') + ":" +
+         d.getMinutes().toString().padStart(2,'0');
+}
+
+// חדשות דרך Ynet
 const URL = "https://api.rss2json.com/v1/api.json?rss_url=" +
   encodeURIComponent("https://www.ynet.co.il/Integration/StoryRss2.xml");
 
@@ -101,12 +110,7 @@ function loadNews() {
       let arr = [];
 
       data.items.slice(0,8).forEach(item=>{
-        let d = new Date(item.pubDate);
-
-        let time =
-          d.getHours().toString().padStart(2,'0') + ":" +
-          d.getMinutes().toString().padStart(2,'0');
-
+        let time = formatIsraelTime(item.pubDate);
         arr.push("🕒 " + time + " • " + item.title);
       });
 
