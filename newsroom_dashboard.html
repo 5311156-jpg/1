@@ -112,31 +112,27 @@ function formatIsraelTime(dateStr) {
   return h + ":" + m;
 }
 
-const URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml");
-
 async function load() {
   try {
-    const res = await fetch(URL + "&t=" + Date.now());
-    const xmlText = await res.text();
-
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(xmlText, "text/xml");
-    const items = xml.querySelectorAll("item");
+    const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml") + "&x=" + Date.now();
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
 
     let arr = [];
 
-    Array.from(items).slice(0, 8).forEach(item => {
-      let title = item.querySelector("title") ? item.querySelector("title").textContent : "";
-      let pubDate = item.querySelector("pubDate") ? item.querySelector("pubDate").textContent : "";
+    if (!data.items || !data.items.length) {
+      document.getElementById("ticker").innerText = "אין חדשות להצגה כרגע";
+      return;
+    }
 
-      let time = formatIsraelTime(pubDate);
-      let cleanTitle = decodeHtmlEntities(title);
-
+    data.items.slice(0, 8).forEach(item => {
+      let time = formatIsraelTime(item.pubDate);
+      let cleanTitle = decodeHtmlEntities(item.title);
       arr.push("🕒 " + time + " • " + cleanTitle);
     });
 
     document.getElementById("ticker").innerText = arr.join("   ✦   ");
-  } catch {
+  } catch (e) {
     document.getElementById("ticker").innerText = "שגיאה בטעינת חדשות";
   }
 }
