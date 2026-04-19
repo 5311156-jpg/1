@@ -113,12 +113,10 @@ function formatIsraelTime(dateStr) {
   return h + ':' + m;
 }
 
-function loadNews() {
-  var url = 'https://api.rss2json.com/v1/api.json?rss_url=' +
-    encodeURIComponent('https://rotter.net/rss/rotternews.xml') +
-    '&cache_bust=' + Date.now();
+const URL = "https://script.google.com/macros/s/AKfycbwARDOLjY2qiE5p_Na6M9qmovRbSklhzBxOgdt20jVbcC2nUHuO_FYfM2s5JLh35SeIUw/exec";
 
-  fetch(url, { cache: 'no-store' })
+function loadNews() {
+  fetch(URL + "?t=" + Date.now(), { cache: 'no-store' })
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!data.items || !data.items.length) {
