@@ -10,16 +10,18 @@
     --bg-color: #111;
     --header-bg: #000;
     --accent-color: #ffcc00;
+    --ticker-speed: 30s; /* מהירות הגלילה - ככל שהמספר קטן יותר זה מהיר יותר */
   }
 
   body {
     margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-color);
     color: white;
     overflow: hidden;
   }
 
+  /* כותרת עליונה */
   .header {
     height: 80px;
     background: var(--header-bg);
@@ -28,46 +30,79 @@
     justify-content: space-between;
     padding: 0 30px;
     border-bottom: 2px solid #333;
+    box-sizing: border-box;
   }
 
-  .logo img { height: 55px; object-fit: contain; }
-  .title { font-size: 28px; font-weight: bold; }
+  .logo img { height: 50px; object-fit: contain; }
+  .title { font-size: 26px; font-weight: bold; }
   .clock { font-size: 32px; font-family: monospace; font-weight: bold; color: var(--accent-color); }
 
+  /* אזור הגיליון */
   .sheet-container {
     height: calc(100vh - 150px);
     background: #fff;
   }
-
   iframe { width: 100%; height: 100%; border: none; }
 
-  .ticker-container {
+  /* טיקר חדשות מודרני */
+  .ticker-wrap {
     height: 70px;
     background: var(--header-bg);
-    display: flex;
-    align-items: center;
     border-top: 2px solid #333;
     position: fixed;
     bottom: 0;
     width: 100%;
+    overflow: hidden; /* מסתיר את מה שיוצא מהגבולות */
+    display: flex;
+    align-items: center;
   }
 
   .ticker-label {
     background: #ce0000;
     color: white;
-    padding: 0 20px;
+    padding: 0 25px;
     height: 100%;
     display: flex;
     align-items: center;
     font-weight: bold;
-    z-index: 10;
-    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    font-size: 22px;
+    z-index: 100;
+    box-shadow: 10px 0 20px rgba(0,0,0,0.8);
     white-space: nowrap;
   }
 
-  marquee { font-size: 26px; font-weight: 500; }
-  .news-item { display: inline-block; padding: 0 15px; }
-  .news-time { color: var(--accent-color); font-weight: bold; margin-left: 8px; }
+  /* האנימציה של הטקסט */
+  .ticker-nav {
+    display: flex;
+    white-space: nowrap;
+    padding-right: 100%; /* התחלה מחוץ למסך */
+    animation: scroll-it var(--ticker-speed) linear infinite;
+  }
+
+  @keyframes scroll-it {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(100%); }
+  }
+
+  .news-item {
+    display: flex;
+    align-items: center;
+    font-size: 26px;
+    font-weight: 500;
+    padding: 0 40px;
+  }
+
+  .news-time {
+    color: var(--accent-color);
+    font-weight: bold;
+    margin-left: 12px;
+    font-family: monospace;
+  }
+
+  /* עצירת האנימציה במעבר עכבר (אופציונלי) */
+  .ticker-wrap:hover .ticker-nav {
+    animation-play-state: paused;
+  }
 </style>
 </head>
 
@@ -85,13 +120,15 @@
   <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vRCDpS9vmjf-R3YwGXJzvlBhnNDVybD9PQ3ZctQx7rUNDSfouU-GmlD-YuR6lgtTn_0Pe1uKSchrRuH/pubhtml?widget=true&headers=false"></iframe>
 </div>
 
-<div class="ticker-container">
+<div class="ticker-wrap">
   <div class="ticker-label">מבזקי רוטר</div>
-  <marquee id="ticker" scrollamount="6">מתחבר לעדכוני סקופים...</marquee>
+  <div id="ticker" class="ticker-nav">
+     <span class="news-item">טוען מבזקים אחרונים...</span>
+  </div>
 </div>
 
 <script>
-// שעון
+// עדכון שעון
 function updateClock() {
   const now = new Date();
   document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -99,60 +136,61 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// פונקציית טעינה עם פענוח קידוד ידני
+// משיכת חדשות מרוטר עם טיפול בקידוד
 async function loadNews() {
   const RSS_URL = "https://rotter.net/rss/rotternews.xml";
-  // שרת פרוקסי שמעביר נתונים גולמיים
+  // שימוש בפרוקסי שמאפשר משיכה של נתונים גולמיים לעקיפת ג'יבריש
   const PROXY_URL = "https://corsproxy.io/?" + encodeURIComponent(RSS_URL + "?t=" + Date.now());
 
   try {
     const response = await fetch(PROXY_URL);
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error('Network error');
     
-    // מושכים את המידע כ-ArrayBuffer (נתונים גולמיים)
+    // קריאת הנתונים כ-Buffer כדי לפענח Windows-1255
     const buffer = await response.arrayBuffer();
-    
-    // מפענחים את הנתונים לפי הקידוד המיוחד של רוטר (Windows-1255)
     const decoder = new TextDecoder('windows-1255');
     const text = decoder.decode(buffer);
     
-    // הופכים את הטקסט ל-XML
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(text, "text/xml");
     const items = xmlDoc.querySelectorAll("item");
 
-    if (items.length === 0) throw new Error('No items found');
-
     let newsHtml = "";
     items.forEach((item, index) => {
-      if (index < 12) {
+      if (index < 15) { // לוקחים 15 מבזקים אחרונים
         const title = item.querySelector("title").textContent;
         const pubDate = item.querySelector("pubDate").textContent;
         
-        // חילוץ שעה
         const dateObj = new Date(pubDate);
-        let timeStr = "00:00";
-        if(!isNaN(dateObj)) {
-            timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
-        }
+        const timeStr = isNaN(dateObj) ? "" : dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
         
-        newsHtml += `<span class="news-item"><span class="news-time">${timeStr}</span> ${title}</span>`;
-        if (index < 11) newsHtml += ' <span style="color:#444"> | </span> ';
+        newsHtml += `
+          <div class="news-item">
+            <span class="news-time">${timeStr}</span>
+            <span class="news-text">${title}</span>
+          </div>
+          <span style="color:#444; font-size:20px;">●</span>
+        `;
       }
     });
 
-    document.getElementById("ticker").innerHTML = newsHtml;
+    if (newsHtml) {
+      const tickerElem = document.getElementById("ticker");
+      tickerElem.innerHTML = newsHtml;
+      
+      // עדכון מהירות האנימציה לפי אורך הטקסט (כדי שלא ירוץ מהר מדי או לאט מדי)
+      const textLength = tickerElem.innerText.length;
+      const newSpeed = Math.max(20, textLength / 15); // חישוב מהירות דינמי
+      tickerElem.style.setProperty('--ticker-speed', newSpeed + 's');
+    }
   } catch (error) {
     console.error("News error:", error);
-    document.getElementById("ticker").innerText = "מנסה להתחבר מחדש למבזקים...";
-    // ניסיון חוזר בעוד 5 שניות במקרה של תקלה
-    setTimeout(loadNews, 5000);
   }
 }
 
-// עדכון כל דקה
+// טעינה ועדכון כל 2 דקות
 loadNews();
-setInterval(loadNews, 60000);
+setInterval(loadNews, 120000);
 </script>
 
 </body>
