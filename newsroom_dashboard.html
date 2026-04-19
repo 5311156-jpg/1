@@ -107,6 +107,7 @@ function decodeText(str) {
 
 function formatIsraelTime(dateStr) {
   var d = new Date(dateStr);
+  d.setHours(d.getHours() + 3);
   var h = String(d.getHours()).padStart(2, '0');
   var m = String(d.getMinutes()).padStart(2, '0');
   return h + ':' + m;
@@ -114,7 +115,7 @@ function formatIsraelTime(dateStr) {
 
 function loadNews() {
   var url = 'https://api.rss2json.com/v1/api.json?rss_url=' +
-    encodeURIComponent('https://www.ynet.co.il/Integration/StoryRss2.xml') +
+    encodeURIComponent('https://rotter.net/rss/rotternews.xml') +
     '&cache_bust=' + Date.now();
 
   fetch(url, { cache: 'no-store' })
@@ -141,7 +142,7 @@ function loadNews() {
 }
 
 loadNews();
-setInterval(loadNews, 15000);
+setInterval(loadNews, 30000);
 </script>
 
 </body>
