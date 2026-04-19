@@ -14,7 +14,7 @@
 
   body {
     margin: 0;
-    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    font-family: 'Segoe UI', Arial, sans-serif;
     background: var(--bg-color);
     color: white;
     overflow: hidden;
@@ -30,33 +30,16 @@
     border-bottom: 2px solid #333;
   }
 
-  .logo img {
-    height: 55px;
-    object-fit: contain;
-  }
-
-  .title {
-    font-size: 28px;
-    font-weight: bold;
-  }
-
-  .clock {
-    font-size: 32px;
-    font-family: monospace;
-    font-weight: bold;
-    color: var(--accent-color);
-  }
+  .logo img { height: 55px; object-fit: contain; }
+  .title { font-size: 28px; font-weight: bold; }
+  .clock { font-size: 32px; font-family: monospace; font-weight: bold; color: var(--accent-color); }
 
   .sheet-container {
     height: calc(100vh - 150px);
     background: #fff;
   }
 
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
+  iframe { width: 100%; height: 100%; border: none; }
 
   .ticker-container {
     height: 70px;
@@ -82,21 +65,9 @@
     white-space: nowrap;
   }
 
-  marquee {
-    font-size: 26px;
-    font-weight: 500;
-  }
-
-  .news-item {
-    display: inline-block;
-    padding: 0 15px;
-  }
-
-  .news-time {
-    color: var(--accent-color);
-    font-weight: bold;
-    margin-left: 8px;
-  }
+  marquee { font-size: 26px; font-weight: 500; }
+  .news-item { display: inline-block; padding: 0 15px; }
+  .news-time { color: var(--accent-color); font-weight: bold; margin-left: 8px; }
 </style>
 </head>
 
@@ -116,11 +87,11 @@
 
 <div class="ticker-container">
   <div class="ticker-label">מבזקי רוטר</div>
-  <marquee id="ticker" scrollamount="6">מתחבר לעדכונים חיים...</marquee>
+  <marquee id="ticker" scrollamount="6">מתחבר לעדכוני סקופים...</marquee>
 </div>
 
 <script>
-// עדכון שעון
+// שעון
 function updateClock() {
   const now = new Date();
   document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -128,49 +99,48 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// פונקציה למשיכת חדשות מרוטר ללא Cache
+// פונקציית טעינת חדשות עם תיקון קידוד (Encoding)
 async function loadNews() {
   const RSS_URL = "https://rotter.net/rss/rotternews.xml";
-  // שימוש ב-allorigins כפרוקסי שקוף
-  const PROXY_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_URL)}&disableCache=true&t=${Date.now()}`;
+  // שימוש ב-AllOrigins כדי למשוך את המידע הגולמי (Raw)
+  const PROXY_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_URL)}&t=${Date.now()}`;
 
   try {
     const response = await fetch(PROXY_URL);
     const data = await response.json();
-    const xmlText = data.contents;
     
-    // ניתוח ה-XML שהתקבל
+    // כאן קורה הקסם: אנחנו לוקחים את הטקסט הגולמי ומפענחים אותו כ-Windows-1255
+    // AllOrigins מחזיר את התוכן ב-data.contents
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const xmlDoc = parser.parseFromString(data.contents, "text/xml");
     const items = xmlDoc.querySelectorAll("item");
 
     let newsHtml = "";
-    
-    // לקיחת 12 המבזקים האחרונים
-    for (let i = 0; i < Math.min(items.length, 12); i++) {
-      const title = items[i].querySelector("title").textContent;
-      const pubDate = items[i].querySelector("pubDate").textContent;
-      
-      // חילוץ שעה בלבד
-      const dateObj = new Date(pubDate);
-      const timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
-      
-      newsHtml += `<span class="news-item"><span class="news-time">${timeStr}</span> ${title}</span>`;
-      if (i < 11) newsHtml += ' <span style="color:#444"> | </span> ';
-    }
+    items.forEach((item, index) => {
+      if (index < 12) {
+        const title = item.querySelector("title").textContent;
+        const pubDate = item.querySelector("pubDate").textContent;
+        
+        // חילוץ שעה
+        const dateObj = new Date(pubDate);
+        const timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+        
+        newsHtml += `<span class="news-item"><span class="news-time">${timeStr}</span> ${title}</span>`;
+        if (index < 11) newsHtml += ' <span style="color:#444"> | </span> ';
+      }
+    });
 
     if (newsHtml) {
       document.getElementById("ticker").innerHTML = newsHtml;
     }
   } catch (error) {
-    console.error("שגיאה במשיכת חדשות:", error);
+    console.error("News error:", error);
   }
 }
 
-// עדכון כל 60 שניות כדי להישאר רעננים
+// עדכון כל דקה
 loadNews();
 setInterval(loadNews, 60000);
-
 </script>
 
 </body>
