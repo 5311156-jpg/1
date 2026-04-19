@@ -12,7 +12,6 @@ body {
   color: white;
 }
 
-/* HEADER */
 .header {
   height: 80px;
   background: black;
@@ -35,7 +34,6 @@ body {
   font-size: 22px;
 }
 
-/* SHEET */
 .sheet {
   height: calc(100vh - 140px);
 }
@@ -46,7 +44,6 @@ iframe {
   border: none;
 }
 
-/* TICKER */
 .ticker {
   height: 60px;
   background: black;
@@ -80,21 +77,15 @@ marquee {
 </div>
 
 <script>
-// CLOCK
 function updateClock() {
   const now = new Date();
-  const time = now.toLocaleTimeString('he-IL', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Jerusalem'
-  });
-  document.getElementById("clock").innerText = time;
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById("clock").innerText = h + ":" + m;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// פענוח קידוד כפול / ישויות HTML
 function decodeHtmlEntities(str) {
   const txt = document.createElement("textarea");
   txt.innerHTML = str;
@@ -104,21 +95,23 @@ function decodeHtmlEntities(str) {
   txt2.innerHTML = decoded;
   decoded = txt2.value;
 
-  return decoded.replace(/&#?\w+;/g, "").trim();
+  return decoded
+    .replace(/&#?\w+;/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
 }
 
-// המרת זמן לשעון ישראל
 function formatIsraelTime(dateStr) {
   const d = new Date(dateStr);
-  return d.toLocaleTimeString('he-IL', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'Asia/Jerusalem'
-  });
+  d.setHours(d.getHours() + 3);
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return h + ":" + m;
 }
 
-// NEWS
 const URL = "https://api.rss2json.com/v1/api.json?rss_url=https://rotter.net/rss/rotternews.xml";
 
 async function load() {
