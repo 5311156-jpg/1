@@ -88,7 +88,16 @@ function updateClock() {
 setInterval(updateClock,1000);
 updateClock();
 
-// חדשות (פתרון פשוט)
+// 🔥 פונקציה שמתקנת עברית מקולקלת
+function fixHebrew(str) {
+  try {
+    return decodeURIComponent(escape(str));
+  } catch {
+    return str;
+  }
+}
+
+// חדשות
 const URL = "https://api.allorigins.win/get?url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml");
 
 function loadNews() {
@@ -105,6 +114,8 @@ function loadNews() {
       items.forEach((item,i)=>{
         if(i<8){
           let title = item.querySelector("title").textContent;
+          title = fixHebrew(title); // 🔥 תיקון עברית
+
           let date = item.querySelector("pubDate").textContent;
 
           let d = new Date(date);
