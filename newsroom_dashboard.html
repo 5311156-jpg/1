@@ -12,6 +12,7 @@ body {
   color: white;
 }
 
+/* HEADER */
 .header {
   height: 80px;
   background: black;
@@ -34,6 +35,7 @@ body {
   font-size: 22px;
 }
 
+/* SHEET */
 .sheet {
   height: calc(100vh - 140px);
 }
@@ -44,6 +46,7 @@ iframe {
   border: none;
 }
 
+/* TICKER */
 .ticker {
   height: 60px;
   background: black;
@@ -77,6 +80,8 @@ marquee {
 </div>
 
 <script>
+
+// CLOCK
 function updateClock() {
   const now = new Date();
   const h = String(now.getHours()).padStart(2, '0');
@@ -86,6 +91,7 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+// ניקוי טקסט
 function decodeHtmlEntities(str) {
   const txt = document.createElement("textarea");
   txt.innerHTML = str;
@@ -104,6 +110,7 @@ function decodeHtmlEntities(str) {
     .trim();
 }
 
+// תיקון זמן
 function formatIsraelTime(dateStr) {
   const d = new Date(dateStr);
   d.setHours(d.getHours() + 3);
@@ -112,33 +119,38 @@ function formatIsraelTime(dateStr) {
   return h + ":" + m;
 }
 
+// NEWS
 async function load() {
   try {
-    const url = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml") + "&x=" + Date.now();
+    const url = "https://api.rss2json.com/v1/api.json?rss_url=" +
+      encodeURIComponent("https://rotter.net/rss/rotternews.xml") +
+      "&x=" + Date.now();
+
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
     let arr = [];
 
-    if (!data.items || !data.items.length) {
-      document.getElementById("ticker").innerText = "אין חדשות להצגה כרגע";
-      return;
-    }
-
     data.items.slice(0, 8).forEach(item => {
       let time = formatIsraelTime(item.pubDate);
       let cleanTitle = decodeHtmlEntities(item.title);
+
       arr.push("🕒 " + time + " • " + cleanTitle);
     });
 
     document.getElementById("ticker").innerText = arr.join("   ✦   ");
-  } catch (e) {
+
+  } catch {
     document.getElementById("ticker").innerText = "שגיאה בטעינת חדשות";
   }
 }
 
 load();
 setInterval(load, 30000);
+
+// 🔥 רענון כל הדף כל דקה
+setInterval(() => location.reload(), 60000);
+
 </script>
 
 </body>
