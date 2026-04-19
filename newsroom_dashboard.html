@@ -9,7 +9,7 @@
   :root {
     --bg-color: #111;
     --header-bg: #000;
-    --accent-color: #ffcc00; /* צבע זהב/צהוב לזמנים */
+    --accent-color: #ffcc00;
   }
 
   body {
@@ -17,7 +17,7 @@
     font-family: 'Segoe UI', Roboto, Arial, sans-serif;
     background: var(--bg-color);
     color: white;
-    overflow: hidden; /* מונע גלילה מיותרת של הדף */
+    overflow: hidden;
   }
 
   .header {
@@ -49,7 +49,7 @@
   }
 
   .sheet-container {
-    height: calc(100vh - 150px); /* התאמה לגובה המסך פחות הידר וטיקר */
+    height: calc(100vh - 150px);
     background: #fff;
   }
 
@@ -80,10 +80,11 @@
     font-weight: bold;
     z-index: 10;
     box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    white-space: nowrap;
   }
 
   marquee {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 500;
   }
 
@@ -115,52 +116,54 @@
 </div>
 
 <div class="ticker-container">
-  <div class="ticker-label">מבזקי רוטר</div>
-  <marquee id="ticker" scrollamount="6">טוען מבזקים אחרונים...</marquee>
+  <div class="ticker-label">סקופים - רוטר</div>
+  <marquee id="ticker" scrollamount="6">מתחבר ללוח הסקופים...</marquee>
 </div>
 
 <script>
-// עדכון שעון מדויק
+// שעון
 function updateClock() {
   const now = new Date();
-  const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-  document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', options);
+  document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// הגדרות חדשות רוטר
-// שימוש ב-rss2json כדי לעקוף בעיות CORS
-const RSS_URL = "https://rotter.net/rss/rotternews.xml";
-const API_KEY = ""; // ניתן להוסיף מפתח אם יש, כרגע עובד בלי
-const PROXY_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}`;
+// שימוש בפיד ה"סקופים" המהיר יותר
+const RSS_URL = "https://rotter.net/rss/rotter.xml";
 
 async function loadNews() {
   try {
-    const response = await fetch(PROXY_URL + "&t=" + Date.now());
+    // הוספת מזהה ייחודי כדי לעקוף Cache של ה-Proxy
+    const cacheBuster = encodeURIComponent(new Date().getTime());
+    const PROXY_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&nocache=${cacheBuster}`;
+
+    const response = await fetch(PROXY_URL);
     const data = await response.json();
 
-    if (data.status === 'ok') {
-      const items = data.items.slice(0, 10); // לוקחים את 10 המבזקים האחרונים
-      const newsHtml = items.map(item => {
-        // חילוץ שעה מתוך תאריך הפרסום
+    if (data.status === 'ok' && data.items.length > 0) {
+      const newsHtml = data.items.slice(0, 12).map(item => {
+        // עיבוד השעה מהפיד
         const pubDate = new Date(item.pubDate);
         const timeStr = pubDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
         
-        return `<span class="news-item"><span class="news-time">${timeStr}</span> ${item.title}</span>`;
-      }).join(' <span style="color:#555">|</span> ');
+        // ניקוי טקסט מיותר אם קיים בכותרת
+        let cleanTitle = item.title.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        
+        return `<span class="news-item"><span class="news-time">${timeStr}</span> ${cleanTitle}</span>`;
+      }).join(' <span style="color:#444"> | </span> ');
 
       document.getElementById("ticker").innerHTML = newsHtml;
     }
   } catch (error) {
-    console.error("Error fetching news:", error);
-    document.getElementById("ticker").innerText = "שגיאה בטעינת מבזקים";
+    console.error("News Load Error:", error);
+    // במקרה של שגיאה, לא נמחוק את מה שיש בטיקר אלא ננסה שוב בשקט
   }
 }
 
-// טעינה ראשונית ועדכון כל דקה
+// טעינה ועדכון כל 2 דקות (כדי לא להיחסם ע"י ה-Proxy)
 loadNews();
-setInterval(loadNews, 60000); 
+setInterval(loadNews, 120000); 
 
 </script>
 
