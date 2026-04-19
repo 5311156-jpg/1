@@ -38,7 +38,6 @@
   .title {
     font-size: 28px;
     font-weight: bold;
-    letter-spacing: 1px;
   }
 
   .clock {
@@ -116,12 +115,12 @@
 </div>
 
 <div class="ticker-container">
-  <div class="ticker-label">סקופים - רוטר</div>
-  <marquee id="ticker" scrollamount="6">מתחבר ללוח הסקופים...</marquee>
+  <div class="ticker-label">מבזקי רוטר</div>
+  <marquee id="ticker" scrollamount="6">מתחבר לעדכונים חיים...</marquee>
 </div>
 
 <script>
-// שעון
+// עדכון שעון
 function updateClock() {
   const now = new Date();
   document.getElementById("clock").innerText = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -129,41 +128,48 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// שימוש בפיד ה"סקופים" המהיר יותר
-const RSS_URL = "https://rotter.net/rss/rotter.xml";
-
+// פונקציה למשיכת חדשות מרוטר ללא Cache
 async function loadNews() {
-  try {
-    // הוספת מזהה ייחודי כדי לעקוף Cache של ה-Proxy
-    const cacheBuster = encodeURIComponent(new Date().getTime());
-    const PROXY_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_URL)}&nocache=${cacheBuster}`;
+  const RSS_URL = "https://rotter.net/rss/rotternews.xml";
+  // שימוש ב-allorigins כפרוקסי שקוף
+  const PROXY_URL = `https://api.allorigins.win/get?url=${encodeURIComponent(RSS_URL)}&disableCache=true&t=${Date.now()}`;
 
+  try {
     const response = await fetch(PROXY_URL);
     const data = await response.json();
+    const xmlText = data.contents;
+    
+    // ניתוח ה-XML שהתקבל
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    const items = xmlDoc.querySelectorAll("item");
 
-    if (data.status === 'ok' && data.items.length > 0) {
-      const newsHtml = data.items.slice(0, 12).map(item => {
-        // עיבוד השעה מהפיד
-        const pubDate = new Date(item.pubDate);
-        const timeStr = pubDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
-        
-        // ניקוי טקסט מיותר אם קיים בכותרת
-        let cleanTitle = item.title.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-        
-        return `<span class="news-item"><span class="news-time">${timeStr}</span> ${cleanTitle}</span>`;
-      }).join(' <span style="color:#444"> | </span> ');
+    let newsHtml = "";
+    
+    // לקיחת 12 המבזקים האחרונים
+    for (let i = 0; i < Math.min(items.length, 12); i++) {
+      const title = items[i].querySelector("title").textContent;
+      const pubDate = items[i].querySelector("pubDate").textContent;
+      
+      // חילוץ שעה בלבד
+      const dateObj = new Date(pubDate);
+      const timeStr = dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+      
+      newsHtml += `<span class="news-item"><span class="news-time">${timeStr}</span> ${title}</span>`;
+      if (i < 11) newsHtml += ' <span style="color:#444"> | </span> ';
+    }
 
+    if (newsHtml) {
       document.getElementById("ticker").innerHTML = newsHtml;
     }
   } catch (error) {
-    console.error("News Load Error:", error);
-    // במקרה של שגיאה, לא נמחוק את מה שיש בטיקר אלא ננסה שוב בשקט
+    console.error("שגיאה במשיכת חדשות:", error);
   }
 }
 
-// טעינה ועדכון כל 2 דקות (כדי לא להיחסם ע"י ה-Proxy)
+// עדכון כל 60 שניות כדי להישאר רעננים
 loadNews();
-setInterval(loadNews, 120000); 
+setInterval(loadNews, 60000);
 
 </script>
 
