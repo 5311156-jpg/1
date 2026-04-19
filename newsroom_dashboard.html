@@ -6,60 +6,59 @@
 
 <style>
 body {
-  margin:0;
-  font-family:Arial;
-  background:#111;
-  color:white;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111;
+  color: white;
 }
 
 /* HEADER */
 .header {
-  height:80px;
-  background:black;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 20px;
-  border-bottom:2px solid #222;
+  height: 80px;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 2px solid #222;
 }
 
 .logo img {
-  height:50px;
+  height: 50px;
 }
 
 .title {
-  font-size:24px;
+  font-size: 24px;
 }
 
 .clock {
-  font-size:22px;
+  font-size: 22px;
 }
 
 /* SHEET */
 .sheet {
-  height:calc(100vh - 140px);
+  height: calc(100vh - 140px);
 }
 
 iframe {
-  width:100%;
-  height:100%;
-  border:none;
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 /* TICKER */
 .ticker {
-  height:60px;
-  background:black;
-  display:flex;
-  align-items:center;
-  font-size:28px;
+  height: 60px;
+  background: black;
+  display: flex;
+  align-items: center;
+  font-size: 28px;
 }
 
 marquee {
-  width:100%;
+  width: 100%;
 }
 </style>
-
 </head>
 
 <body>
@@ -68,7 +67,7 @@ marquee {
   <div class="logo">
     <img src="לוגו בקהילה הכי טובים_Page_1.png" alt="בקהילה">
   </div>
-  <div class="title">דשבורד חדשות</div>
+  <div class="title">סטטוס מערכת העיתון</div>
   <div class="clock" id="clock"></div>
 </div>
 
@@ -81,45 +80,69 @@ marquee {
 </div>
 
 <script>
-
 // CLOCK
-function updateClock(){
+function updateClock() {
   const now = new Date();
-  let h = now.getHours().toString().padStart(2,'0');
-  let m = now.getMinutes().toString().padStart(2,'0');
-  document.getElementById("clock").innerText = h + ":" + m;
+  const time = now.toLocaleTimeString('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Jerusalem'
+  });
+  document.getElementById("clock").innerText = time;
 }
-setInterval(updateClock,1000);
+setInterval(updateClock, 1000);
 updateClock();
+
+// פענוח קידוד כפול / ישויות HTML
+function decodeHtmlEntities(str) {
+  const txt = document.createElement("textarea");
+  txt.innerHTML = str;
+  let decoded = txt.value;
+
+  const txt2 = document.createElement("textarea");
+  txt2.innerHTML = decoded;
+  decoded = txt2.value;
+
+  return decoded.replace(/&#?\w+;/g, "").trim();
+}
+
+// המרת זמן לשעון ישראל
+function formatIsraelTime(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Jerusalem'
+  });
+}
 
 // NEWS
 const URL = "https://api.rss2json.com/v1/api.json?rss_url=https://rotter.net/rss/rotternews.xml";
 
-async function load(){
-  try{
+async function load() {
+  try {
     const res = await fetch(URL);
     const data = await res.json();
 
     let arr = [];
 
-    data.items.slice(0,8).forEach(item=>{
-      let timeMatch = item.pubDate.match(/\d{2}:\d{2}/);
-      let time = timeMatch ? timeMatch[0] : "";
-      let cleanTitle = new DOMParser().parseFromString(item.title, "text/html").body.textContent;
+    data.items.slice(0, 8).forEach(item => {
+      let time = formatIsraelTime(item.pubDate);
+      let cleanTitle = decodeHtmlEntities(item.title);
 
       arr.push("🕒 " + time + " • " + cleanTitle);
     });
 
     document.getElementById("ticker").innerText = arr.join("   ✦   ");
-
-  }catch{
+  } catch {
     document.getElementById("ticker").innerText = "שגיאה בטעינת חדשות";
   }
 }
 
 load();
-setInterval(load,60000);
-
+setInterval(load, 60000);
 </script>
 
 </body>
