@@ -112,18 +112,25 @@ function formatIsraelTime(dateStr) {
   return h + ":" + m;
 }
 
-const URL = "https://api.rss2json.com/v1/api.json?rss_url=https://rotter.net/rss/rotternews.xml";
+const URL = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://rotter.net/rss/rotternews.xml");
 
 async function load() {
   try {
-    const res = await fetch(URL);
-    const data = await res.json();
+    const res = await fetch(URL + "&t=" + Date.now());
+    const xmlText = await res.text();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, "text/xml");
+    const items = xml.querySelectorAll("item");
 
     let arr = [];
 
-    data.items.slice(0, 8).forEach(item => {
-      let time = formatIsraelTime(item.pubDate);
-      let cleanTitle = decodeHtmlEntities(item.title);
+    Array.from(items).slice(0, 8).forEach(item => {
+      let title = item.querySelector("title") ? item.querySelector("title").textContent : "";
+      let pubDate = item.querySelector("pubDate") ? item.querySelector("pubDate").textContent : "";
+
+      let time = formatIsraelTime(pubDate);
+      let cleanTitle = decodeHtmlEntities(title);
 
       arr.push("🕒 " + time + " • " + cleanTitle);
     });
@@ -135,7 +142,7 @@ async function load() {
 }
 
 load();
-setInterval(load, 60000);
+setInterval(load, 30000);
 </script>
 
 </body>
